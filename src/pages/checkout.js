@@ -1,14 +1,39 @@
 import CheckoutProduct from "@/components/CheckoutProduct"
 import Header from "@/components/Header"
 import { selectItems, selectTotal } from "@/slices/basketSlice"
+import { loadStripe } from "@stripe/stripe-js"
+import axios from "axios"
 import { useSession } from "next-auth/react"
 import Image from "next/image"
 import { useSelector } from "react-redux"
+
+const stripePromise = loadStripe(process.env.stripe_public_key)
 
 const Checkout = () => {
     const items = useSelector(selectItems)
     const total = useSelector(selectTotal)
     const { status, data: session } = useSession()
+
+    const createCheckoutSession = async () => {
+        const stripe = await stripePromise
+
+        // call the backend to create the checkout session
+        const checkoutSession = await axios.post('/api/create-checkout-session',
+            {
+                items,
+                email: session.user.email
+            }
+        )
+
+        // redirect user/customer
+        const result = await stripe.redirectToCheckout({
+            sessionId: checkoutSession.data.id
+        })
+
+        if (result.error) {
+            alert(result.error.message)
+        }
+    }
     return (
         <div className="bg-gray-100">
             <Header />
@@ -50,7 +75,11 @@ const Checkout = () => {
                                 </span>
                             </h2>
 
-                            <button disabled={!session} className={`button mt-2 whitespace-nowrap ${!session && "from-gray-300 to-gray-500 border-gray-200 text-gray-300 cursor-not-allowed"}`}>
+                            <button
+                                role="link"
+                                disabled={!session}
+                                onClick={createCheckoutSession}
+                                className={`button mt-2 whitespace-nowrap ${!session && "from-gray-300 to-gray-500 border-gray-200 text-gray-300 cursor-not-allowed"}`}>
                                 {!session ? "Sign in to checkout" : "Proceed to checkout"}
                             </button>
                         </div>
