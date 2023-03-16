@@ -6,6 +6,7 @@ const nextConfig = {
   },
   images: {
     domains: ['links.papareact.com', 'fakestoreapi.com'],
+    path: "_next/image"
   },
   env: {
     stripe_public_key: process.env.STRIPE_PUBLIC_KEY
